@@ -1,48 +1,56 @@
 package com.megacitycab.servlets;
 
+import com.megacitycab.models.Booking;
 import com.megacitycab.utils.DBConnection;
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.util.ArrayList;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.RequestDispatcher;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 @WebServlet("/AdminBookingServlet")
 public class AdminBookingServlet extends HttpServlet {
+    private static final long serialVersionUID = 1L;
+
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        ArrayList<String[]> bookings = new ArrayList<>();
+        List<Booking> bookings = new ArrayList<>();
 
-        try (Connection conn = DBConnection.getConnection()) {
-            String sql = "SELECT id, customer_name, phone, pickup_location, dropoff_location, booking_date, status FROM bookings";
-            PreparedStatement stmt = conn.prepareStatement(sql);
-            ResultSet rs = stmt.executeQuery();
+        try (Connection con = DBConnection.getConnection()) {
+            String query = "SELECT b.id, u.full_name, u.phone, b.pickup_location, b.dropoff_location, b.booking_date, b.status " +
+                    "FROM bookings b " +
+                    "JOIN users u ON b.customer_id = u.id";
+            PreparedStatement ps = con.prepareStatement(query);
+            ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
-                String[] booking = {
-                        rs.getString("id"),
-                        rs.getString("customer_name"),
+                Booking booking = new Booking(
+                        rs.getInt("id"),
+                        rs.getString("full_name"),
                         rs.getString("phone"),
                         rs.getString("pickup_location"),
                         rs.getString("dropoff_location"),
-                        rs.getString("booking_date"),
+                        rs.getTimestamp("booking_date"),
                         rs.getString("status")
-                };
+                );
                 bookings.add(booking);
             }
-        } catch (Exception e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         }
 
+        // Store bookings list in request attribute
         request.setAttribute("bookings", bookings);
-        RequestDispatcher dispatcher = request.getRequestDispatcher("admin-dashboard.jsp");
-        dispatcher.forward(request, response);
+
+        // Forward to JSP page
+        request.getRequestDispatcher("admin-dashboard.jsp").forward(request, response);
     }
 }

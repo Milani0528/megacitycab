@@ -1,16 +1,19 @@
-<%@ page import="java.util.ArrayList" %>
-<!DOCTYPE html>
+<%@ page import="com.megacitycab.models.Booking" %>
+<%@ page import="java.util.List" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+
 <html>
 <head>
-    <title>Admin Dashboard - All Bookings</title>
+    <title>Admin Dashboard</title>
     <style>
-        table { width: 100%; border-collapse: collapse; }
+        table { border-collapse: collapse; width: 100%; }
         th, td { border: 1px solid black; padding: 8px; text-align: left; }
         th { background-color: #f2f2f2; }
     </style>
 </head>
 <body>
-<h2>All Bookings</h2>
+<h1>All Bookings</h1>
+
 <table>
     <tr>
         <th>ID</th>
@@ -21,22 +24,27 @@
         <th>Booking Date</th>
         <th>Status</th>
     </tr>
+
     <%
-        ArrayList<String[]> bookings = (ArrayList<String[]>) request.getAttribute("bookings");
+        List<Booking> bookings = (List<Booking>) request.getAttribute("bookings");
         if (bookings != null) {
-            for (String[] booking : bookings) {
+            for (Booking booking : bookings) {
     %>
     <tr>
-        <td><%= booking[0] %></td>
-        <td><%= booking[1] %></td>
-        <td><%= booking[2] %></td>
-        <td><%= booking[3] %></td>
-        <td><%= booking[4] %></td>
-        <td><%= booking[5] %></td>
-        <td><%= booking[6] %></td>
+        <td><%= booking.getId() %></td>
+        <td><%= booking.getCustomerName() %></td>
+        <td><%= booking.getPhone() %></td>
+        <td><%= booking.getPickupLocation() %></td>
+        <td><%= booking.getDropoffLocation() %></td>
+        <td><%= booking.getBookingDate() %></td>
+        <td><%= booking.getStatus() %></td>
     </tr>
     <%
-            }
+        }
+    } else {
+    %>
+    <tr><td colspan="7">No bookings available</td></tr>
+    <%
         }
     %>
 </table>
