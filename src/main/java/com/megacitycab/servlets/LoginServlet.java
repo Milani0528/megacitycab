@@ -25,7 +25,7 @@ public class LoginServlet extends HttpServlet {
             String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setString(1, username);
-            stmt.setString(2, password); // Insecure (password should be hashed)
+            stmt.setString(2, password); // Secure this later with password hashing
 
             ResultSet rs = stmt.executeQuery();
 
@@ -36,13 +36,16 @@ public class LoginServlet extends HttpServlet {
                 session.setAttribute("phone", rs.getString("phone"));
                 session.setAttribute("role", rs.getString("role"));
 
-                // Redirect based on role
+                // **🔹 Redirect based on Role**
                 String role = rs.getString("role");
                 if ("admin".equals(role)) {
                     response.sendRedirect("admin-dashboard.jsp");
+                } else if ("driver".equals(role)) {
+                    response.sendRedirect("driver-dashboard.jsp");
                 } else {
-                    response.sendRedirect("dashboard.jsp");
+                    response.sendRedirect("dashboard.jsp"); // Default to customer dashboard
                 }
+
             } else {
                 response.getWriter().println("<h3>Invalid Credentials! Try Again.</h3>");
             }
