@@ -16,22 +16,24 @@ public class CompleteTripServlet extends HttpServlet {
             throws ServletException, IOException {
 
         // Retrieve form parameters
-        String bookingIdStr = request.getParameter("bookingId");
+        String bookingIdStr = request.getParameter("bookingId");  // Ensure name matches form
         String fareStr = request.getParameter("fare");
 
         try {
-            // Validate bookingId and fare inputs
+            // Validate inputs
             if (bookingIdStr == null || bookingIdStr.isEmpty()) {
-                throw new IllegalArgumentException("Booking ID is missing!");
+                response.getWriter().println("<h3>Error: Booking ID is missing!</h3>");
+                return;
             }
             if (fareStr == null || fareStr.isEmpty()) {
-                throw new IllegalArgumentException("Fare amount cannot be empty!");
+                response.getWriter().println("<h3>Error: Fare amount cannot be empty!</h3>");
+                return;
             }
 
             int bookingId = Integer.parseInt(bookingIdStr);
-            double fare = Double.parseDouble(fareStr); // Convert to double
+            double fare = Double.parseDouble(fareStr);
 
-            // Update the database to set status as 'Completed' and save fare amount
+            // Update the database
             try (Connection conn = DBConnection.getConnection()) {
                 String sql = "UPDATE bookings SET status = 'Completed', amount = ?, payment_status = 'Pending' WHERE id = ?";
                 PreparedStatement stmt = conn.prepareStatement(sql);
@@ -49,3 +51,4 @@ public class CompleteTripServlet extends HttpServlet {
         }
     }
 }
+
