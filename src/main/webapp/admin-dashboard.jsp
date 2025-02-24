@@ -1,80 +1,88 @@
-<%@ page import="java.sql.*" %>
-<%@ page import="com.megacitycab.utils.DBConnection" %>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.sql.*, com.megacitycab.utils.DBConnection" %>
 <!DOCTYPE html>
 <html>
 <head>
     <title>Admin Dashboard - Manage Bookings</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; }
-        table { width: 80%; margin: auto; border-collapse: collapse; }
-        th, td { border: 1px solid black; padding: 10px; text-align: center; }
-        th { background-color: #f2f2f2; }
-        button { padding: 5px 10px; cursor: pointer; }
-    </style>
+    <!-- Bootstrap CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </head>
-<body>
+<body class="bg-light">
 
-<h2>All Bookings</h2>
-<table>
-    <tr>
-        <th>ID</th>
-        <th>Customer</th>
-        <th>Phone</th>
-        <th>Pickup</th>
-        <th>Dropoff</th>
-        <th>Date</th>
-        <th>Status</th>
-        <th>Action</th>
-    </tr>
+<!-- Navbar -->
+<nav class="navbar navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand">Mega City Cab - Admin Dashboard</a>
+        <a href="LogoutServlet" class="btn btn-danger">Logout</a>
+    </div>
+</nav>
 
-    <%
-        try (Connection conn = DBConnection.getConnection()) {
-            String sql = "SELECT b.id, u.full_name, u.phone, b.pickup_location, b.dropoff_location, b.booking_date, b.status FROM bookings b JOIN users u ON b.customer_id = u.id";
-            PreparedStatement stmt = conn.prepareStatement(sql);
-            ResultSet rs = stmt.executeQuery();
+<!-- Main Content -->
+<div class="container mt-4">
+    <h2 class="text-center">Manage Bookings</h2>
 
-            while (rs.next()) {
-                int bookingId = rs.getInt("id");
-                String fullName = rs.getString("full_name");
-                String phone = rs.getString("phone");
-                String pickup = rs.getString("pickup_location");
-                String dropoff = rs.getString("dropoff_location");
-                String date = rs.getString("booking_date");
-                String status = rs.getString("status");
-    %>
+    <table class="table table-bordered table-striped mt-3">
+        <thead class="table-primary">
+        <tr>
+            <th>ID</th>
+            <th>Customer Name</th>
+            <th>Phone</th>
+            <th>Pickup Location</th>
+            <th>Drop-off Location</th>
+            <th>Booking Date</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <%
+            try (Connection conn = DBConnection.getConnection()) {
+                String sql = "SELECT b.id, u.full_name, u.phone, b.pickup_location, b.dropoff_location, b.booking_date, b.status FROM bookings b JOIN users u ON b.customer_id = u.id";
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery();
 
-    <tr>
-        <td><%= bookingId %></td>
-        <td><%= fullName %></td>
-        <td><%= phone %></td>
-        <td><%= pickup %></td>
-        <td><%= dropoff %></td>
-        <td><%= date %></td>
-        <td><%= status %></td>
-        <td>
-            <% if ("Pending".equals(status)) { %>
-            <form action="UpdateBookingServlet" method="post">
-                <input type="hidden" name="bookingId" value="<%= bookingId %>">
-                <input type="hidden" name="newStatus" value="Confirmed">
-                <button type="submit" style="background: orange;">Confirm</button>
-            </form>
-            <% } else if ("Confirmed".equals(status)) { %>
-            <form action="UpdateBookingServlet" method="post">
-                <input type="hidden" name="bookingId" value="<%= bookingId %>">
-                <input type="hidden" name="newStatus" value="Completed">
-                <button type="submit" style="background: green; color: white;">Complete</button>
-            </form>
-            <% } %>
-        </td>
-    </tr>
-
-    <%
+                while (rs.next()) {
+        %>
+        <tr>
+            <td><%= rs.getInt("id") %></td>
+            <td><%= rs.getString("full_name") %></td>
+            <td><%= rs.getString("phone") %></td>
+            <td><%= rs.getString("pickup_location") %></td>
+            <td><%= rs.getString("dropoff_location") %></td>
+            <td><%= rs.getTimestamp("booking_date") %></td>
+            <td>
+                <form action="UpdateBookingServlet" method="post" class="d-flex">
+                    <input type="hidden" name="booking_id" value="<%= rs.getInt("id") %>">
+                    <select name="status" class="form-select me-2">
+                        <option value="Pending" <%= rs.getString("status").equals("Pending") ? "selected" : "" %>>Pending</option>
+                        <option value="Confirmed" <%= rs.getString("status").equals("Confirmed") ? "selected" : "" %>>Confirmed</option>
+                        <option value="Completed" <%= rs.getString("status").equals("Completed") ? "selected" : "" %>>Completed</option>
+                    </select>
+                    <button type="submit" class="btn btn-success">Update</button>
+                </form>
+            </td>
+            <td>
+                <form action="DeleteBookingServlet" method="post">
+                    <input type="hidden" name="booking_id" value="<%= rs.getInt("id") %>">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+        <%
             }
         } catch (Exception e) {
             e.printStackTrace();
-        }
-    %>
+        %>
+        <tr>
+            <td colspan="8" class="text-danger text-center">Error loading bookings</td>
+        </tr>
+        <%
+            }
+        %>
+        </tbody>
+    </table>
+</div>
 
-</table>
 </body>
 </html>

@@ -19,66 +19,71 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Mega City Cab</title>
+
+    <!-- Bootstrap CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            text-align: center;
-            padding: 50px;
-        }
         .dashboard-container {
             background: white;
             padding: 30px;
             max-width: 500px;
             margin: auto;
-            border-radius: 8px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.2);
+            text-align: center;
         }
         h2 {
-            color: #333;
+            color: #007bff;
         }
-        p {
-            font-size: 16px;
-            margin: 10px 0;
+        .btn-custom {
+            width: 100%;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.3s ease-in-out;
         }
-        .btn {
-            display: inline-block;
-            padding: 12px 20px;
-            margin-top: 20px;
-            font-size: 16px;
-            text-decoration: none;
-            color: white;
-            border-radius: 5px;
-            transition: 0.3s;
-        }
-        .book-btn {
+        .btn-book {
             background-color: #28a745;
+            color: white;
         }
-        .book-btn:hover {
+        .btn-book:hover {
             background-color: #218838;
+            color: white;
         }
-        .logout-btn {
+        .btn-logout {
             background-color: #dc3545;
+            color: white;
         }
-        .logout-btn:hover {
+        .btn-logout:hover {
             background-color: #c82333;
+            color: white;
         }
     </style>
 </head>
-<body>
+<body class="bg-light">
 
-<div class="dashboard-container">
-    <h2>Welcome, <%= fullName %></h2>
-    <p><strong>Phone:</strong> <%= phone %></p>
-    <p><strong>Role:</strong> <%= role %></p>
+<!-- Navbar -->
+<nav class="navbar navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand">Mega City Cab - Dashboard</a>
+        <a href="LogoutServlet" class="btn btn-danger">Logout</a>
+    </div>
+</nav>
 
-    <!-- Book a Cab Button -->
-    <a href="booking.jsp" class="btn book-btn">🚖 Book a Cab</a>
+<!-- Main Content -->
+<div class="container mt-5">
+    <div class="dashboard-container p-4">
+        <h2>Welcome, <%= fullName %> 👋</h2>
+        <p class="text-muted"><strong>Phone:</strong> <%= phone %></p>
+        <p class="text-muted"><strong>Role:</strong> <%= role %></p>
 
-    <br><br>
+        <!-- Book a Cab Button -->
+        <a href="booking.jsp" class="btn btn-book btn-lg btn-custom mb-3">🚖 Book a Cab</a>
 
-    <!-- Logout Button -->
-    <a href="logout.jsp" class="btn logout-btn">🚪 Logout</a>
+        <!-- Logout Button -->
+        <a href="LogoutServlet" class="btn btn-logout btn-lg btn-custom">🚪 Logout</a>
+    </div>
 </div>
 
 </body>
