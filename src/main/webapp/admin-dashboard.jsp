@@ -1,52 +1,80 @@
-<%@ page import="com.megacitycab.models.Booking" %>
-<%@ page import="java.util.List" %>
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
-
+<%@ page import="java.sql.*" %>
+<%@ page import="com.megacitycab.utils.DBConnection" %>
+<!DOCTYPE html>
 <html>
 <head>
-    <title>Admin Dashboard</title>
+    <title>Admin Dashboard - Manage Bookings</title>
     <style>
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid black; padding: 8px; text-align: left; }
+        body { font-family: Arial, sans-serif; text-align: center; }
+        table { width: 80%; margin: auto; border-collapse: collapse; }
+        th, td { border: 1px solid black; padding: 10px; text-align: center; }
         th { background-color: #f2f2f2; }
+        button { padding: 5px 10px; cursor: pointer; }
     </style>
 </head>
 <body>
-<h1>All Bookings</h1>
 
+<h2>All Bookings</h2>
 <table>
     <tr>
         <th>ID</th>
-        <th>Customer Name</th>
+        <th>Customer</th>
         <th>Phone</th>
-        <th>Pickup Location</th>
-        <th>Drop-off Location</th>
-        <th>Booking Date</th>
+        <th>Pickup</th>
+        <th>Dropoff</th>
+        <th>Date</th>
         <th>Status</th>
+        <th>Action</th>
     </tr>
 
     <%
-        List<Booking> bookings = (List<Booking>) request.getAttribute("bookings");
-        if (bookings != null) {
-            for (Booking booking : bookings) {
+        try (Connection conn = DBConnection.getConnection()) {
+            String sql = "SELECT b.id, u.full_name, u.phone, b.pickup_location, b.dropoff_location, b.booking_date, b.status FROM bookings b JOIN users u ON b.customer_id = u.id";
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                int bookingId = rs.getInt("id");
+                String fullName = rs.getString("full_name");
+                String phone = rs.getString("phone");
+                String pickup = rs.getString("pickup_location");
+                String dropoff = rs.getString("dropoff_location");
+                String date = rs.getString("booking_date");
+                String status = rs.getString("status");
     %>
+
     <tr>
-        <td><%= booking.getId() %></td>
-        <td><%= booking.getCustomerName() %></td>
-        <td><%= booking.getPhone() %></td>
-        <td><%= booking.getPickupLocation() %></td>
-        <td><%= booking.getDropoffLocation() %></td>
-        <td><%= booking.getBookingDate() %></td>
-        <td><%= booking.getStatus() %></td>
+        <td><%= bookingId %></td>
+        <td><%= fullName %></td>
+        <td><%= phone %></td>
+        <td><%= pickup %></td>
+        <td><%= dropoff %></td>
+        <td><%= date %></td>
+        <td><%= status %></td>
+        <td>
+            <% if ("Pending".equals(status)) { %>
+            <form action="UpdateBookingServlet" method="post">
+                <input type="hidden" name="bookingId" value="<%= bookingId %>">
+                <input type="hidden" name="newStatus" value="Confirmed">
+                <button type="submit" style="background: orange;">Confirm</button>
+            </form>
+            <% } else if ("Confirmed".equals(status)) { %>
+            <form action="UpdateBookingServlet" method="post">
+                <input type="hidden" name="bookingId" value="<%= bookingId %>">
+                <input type="hidden" name="newStatus" value="Completed">
+                <button type="submit" style="background: green; color: white;">Complete</button>
+            </form>
+            <% } %>
+        </td>
     </tr>
+
     <%
-        }
-    } else {
-    %>
-    <tr><td colspan="7">No bookings available</td></tr>
-    <%
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     %>
+
 </table>
 </body>
 </html>
