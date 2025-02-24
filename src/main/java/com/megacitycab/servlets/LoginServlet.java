@@ -30,19 +30,32 @@ public class LoginServlet extends HttpServlet {
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
-                HttpSession session = request.getSession();
-                session.setAttribute("username", username);
+                System.out.println("DEBUG: Login successful for " + username);
+
+                // Ensure session exists
+                HttpSession session = request.getSession(true);
+                session.setAttribute("userId", rs.getInt("id"));
+                session.setAttribute("full_name", rs.getString("full_name"));
+                session.setAttribute("phone", rs.getString("phone"));
                 session.setAttribute("role", rs.getString("role"));
-                response.sendRedirect("dashboard.jsp");
+
+                // Use absolute URL for redirection
+                System.out.println("DEBUG: New Session ID: " + session.getId());  // Print after setting attributes
+                response.sendRedirect(request.getContextPath() + "/dashboard.jsp");
+                System.out.println("DEBUG: Redirecting to " + request.getContextPath() + "/dashboard.jsp");
+
+                return;
+
             } else {
-                response.getWriter().println("<h3>Invalid Credentials! Try Again.</h3>");
+                System.out.println("DEBUG: Login failed for " + username);
+                response.sendRedirect(request.getContextPath() + "/index.jsp?error=1");
             }
 
         } catch (Exception e) {
             e.printStackTrace();
-            response.getWriter().println("<h3>Error Connecting to Database</h3>");
+            response.sendRedirect(request.getContextPath() + "/index.jsp?error=2");
         }
     }
-
-
 }
+
+
