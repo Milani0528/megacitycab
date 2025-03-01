@@ -26,9 +26,24 @@ public class BookingServlet extends HttpServlet {
             return;
         }
 
-        String pickupLocation = request.getParameter("pickupLocation");
-        String dropoffLocation = request.getParameter("dropoffLocation");
-        String bookingDate = request.getParameter("bookingDate");
+        // ✅ Fix Parameter Name Mismatch
+        String pickupLocation = request.getParameter("pickup_location");
+        String dropoffLocation = request.getParameter("dropoff_location");
+        String bookingDate = request.getParameter("booking_date");
+
+        // ✅ Debugging: Print Values for Verification
+        System.out.println("DEBUG: Pickup = " + pickupLocation);
+        System.out.println("DEBUG: Drop-off = " + dropoffLocation);
+        System.out.println("DEBUG: Booking Date (Raw) = " + bookingDate);
+
+        // 🚨 Ensure `bookingDate` is not null before proceeding
+        if (bookingDate == null || bookingDate.trim().isEmpty()) {
+            response.getWriter().println("<h3>Error: Booking Date is required.</h3>");
+            return;
+        }
+
+        // ✅ Fix Date Format (Convert `yyyy-MM-ddTHH:mm` to `yyyy-MM-dd HH:mm:ss`)
+        bookingDate = bookingDate.replace("T", " ") + ":00";
 
         try (Connection conn = DBConnection.getConnection()) {
             String sql = "INSERT INTO bookings (customer_id, pickup_location, dropoff_location, booking_date, status, payment_status, amount) VALUES (?, ?, ?, ?, 'Pending', 'Pending', NULL)";
@@ -36,17 +51,17 @@ public class BookingServlet extends HttpServlet {
             stmt.setInt(1, customerId);
             stmt.setString(2, pickupLocation);
             stmt.setString(3, dropoffLocation);
-
-            // 🔥 Fix datetime format
-            bookingDate = bookingDate.replace("T", " ") + ":00"; // Ensure format yyyy-MM-dd HH:mm:ss
             stmt.setTimestamp(4, Timestamp.valueOf(bookingDate));
 
-            stmt.executeUpdate();
-            response.sendRedirect("booking_success.jsp");
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected > 0) {
+                response.sendRedirect("dashboard.jsp");
+            } else {
+                response.getWriter().println("<h3>Error: Failed to book cab.</h3>");
+            }
         } catch (Exception e) {
             e.printStackTrace();
-            response.getWriter().println("<h3>Error: Failed to book cab.</h3>");
+            response.getWriter().println("<h3>Error: " + e.getMessage() + "</h3>");
         }
     }
 }
-

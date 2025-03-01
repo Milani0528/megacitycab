@@ -25,37 +25,34 @@ public class LoginServlet extends HttpServlet {
             String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setString(1, username);
-            stmt.setString(2, password); // Insecure (password should be hashed)
+            stmt.setString(2, password); // Secure this later with password hashing
 
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
-                System.out.println("DEBUG: Login successful for " + username);
-
-                // Ensure session exists
-                HttpSession session = request.getSession(true);
+                HttpSession session = request.getSession();
                 session.setAttribute("userId", rs.getInt("id"));
                 session.setAttribute("full_name", rs.getString("full_name"));
                 session.setAttribute("phone", rs.getString("phone"));
                 session.setAttribute("role", rs.getString("role"));
 
-                // Use absolute URL for redirection
-                System.out.println("DEBUG: New Session ID: " + session.getId());  // Print after setting attributes
-                response.sendRedirect(request.getContextPath() + "/dashboard.jsp");
-                System.out.println("DEBUG: Redirecting to " + request.getContextPath() + "/dashboard.jsp");
-
-                return;
+                // **🔹 Redirect based on Role**
+                String role = rs.getString("role");
+                if ("admin".equals(role)) {
+                    response.sendRedirect("admin-dashboard.jsp");
+                } else if ("driver".equals(role)) {
+                    response.sendRedirect("driver-dashboard.jsp");
+                } else {
+                    response.sendRedirect("dashboard.jsp"); // Default to customer dashboard
+                }
 
             } else {
-                System.out.println("DEBUG: Login failed for " + username);
-                response.sendRedirect(request.getContextPath() + "/index.jsp?error=1");
+                response.getWriter().println("<h3>Invalid Credentials! Try Again.</h3>");
             }
 
         } catch (Exception e) {
             e.printStackTrace();
-            response.sendRedirect(request.getContextPath() + "/index.jsp?error=2");
+            response.getWriter().println("<h3>Error Connecting to Database</h3>");
         }
     }
 }
-
-
