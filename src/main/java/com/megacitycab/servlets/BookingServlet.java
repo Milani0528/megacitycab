@@ -1,58 +1,67 @@
 package com.megacitycab.servlets;
 
 import com.megacitycab.utils.DBConnection;
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-
-
-
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.Timestamp;
 
 @WebServlet("/BookingServlet")
 public class BookingServlet extends HttpServlet {
+
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        String customerName = request.getParameter("customer_name");
-        String phone = request.getParameter("phone");
+        HttpSession session = request.getSession();
+        Integer customerId = (Integer) session.getAttribute("userId");
+
+        if (customerId == null) {
+            response.getWriter().println("<h3>Error: You must be logged in to book a cab.</h3>");
+            return;
+        }
+
+        // ✅ Fix Parameter Name Mismatch
         String pickupLocation = request.getParameter("pickup_location");
         String dropoffLocation = request.getParameter("dropoff_location");
         String bookingDate = request.getParameter("booking_date");
 
-        System.out.println("Received booking request:");
-        System.out.println("Customer Name: " + customerName);
-        System.out.println("Phone: " + phone);
-        System.out.println("Pickup Location: " + pickupLocation);
-        System.out.println("Drop-off Location: " + dropoffLocation);
-        System.out.println("Booking Date: " + bookingDate);
+        // ✅ Debugging: Print Values for Verification
+        System.out.println("DEBUG: Pickup = " + pickupLocation);
+        System.out.println("DEBUG: Drop-off = " + dropoffLocation);
+        System.out.println("DEBUG: Booking Date (Raw) = " + bookingDate);
+
+        // 🚨 Ensure `bookingDate` is not null before proceeding
+        if (bookingDate == null || bookingDate.trim().isEmpty()) {
+            response.getWriter().println("<h3>Error: Booking Date is required.</h3>");
+            return;
+        }
+
+        // ✅ Fix Date Format (Convert `yyyy-MM-ddTHH:mm` to `yyyy-MM-dd HH:mm:ss`)
+        bookingDate = bookingDate.replace("T", " ") + ":00";
 
         try (Connection conn = DBConnection.getConnection()) {
-            String sql = "INSERT INTO bookings (customer_name, phone, pickup_location, dropoff_location, booking_date) VALUES (?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO bookings (customer_id, pickup_location, dropoff_location, booking_date, status, payment_status, amount) VALUES (?, ?, ?, ?, 'Pending', 'Pending', NULL)";
             PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setString(1, customerName);
-            stmt.setString(2, phone);
-            stmt.setString(3, pickupLocation);
-            stmt.setString(4, dropoffLocation);
-            stmt.setString(5, bookingDate);
+            stmt.setInt(1, customerId);
+            stmt.setString(2, pickupLocation);
+            stmt.setString(3, dropoffLocation);
+            stmt.setTimestamp(4, Timestamp.valueOf(bookingDate));
 
-            int rowsInserted = stmt.executeUpdate();
-            if (rowsInserted > 0) {
-                System.out.println("✅ Booking inserted successfully into the database!");
-                response.getWriter().println("<h3 style='color:green;'>Booking Success! Check Console Log.</h3>");
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected > 0) {
+                response.sendRedirect("dashboard.jsp");
             } else {
-                System.out.println("❌ Booking insertion failed!");
-                response.getWriter().println("<h3 style='color:red;'>Booking Failed! Check Console Log.</h3>");
+                response.getWriter().println("<h3>Error: Failed to book cab.</h3>");
             }
-
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("🚨 Database Error: " + e.getMessage());
-            response.getWriter().println("<h3 style='color:red;'>Error Connecting to Database! Check Console Log.</h3>");
+            response.getWriter().println("<h3>Error: " + e.getMessage() + "</h3>");
         }
     }
 }
