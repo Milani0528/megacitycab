@@ -2,85 +2,133 @@ package com.megacitycab.tests;
 
 import com.megacitycab.servlets.BookingServlet;
 import com.megacitycab.utils.DBConnection;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.*;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class BookingServletTest {
+class BookingServletTest {
 
     @InjectMocks
     private BookingServlet bookingServlet;
 
-    @Mock private HttpServletRequest request;
-    @Mock private HttpServletResponse response;
-    @Mock private HttpSession session;
-    @Mock private Connection connection;
-    @Mock private PreparedStatement preparedStatement;
+    @Mock
+    private HttpServletRequest request;
 
-    private StringWriter stringWriter;
-    private PrintWriter writer;
+    @Mock
+    private HttpServletResponse response;
+
+    @Mock
+    private HttpSession session;
+
+    @Mock
+    private Connection connection;
+
+    @Mock
+    private PreparedStatement preparedStatement;
+
+    @Mock
+    private RequestDispatcher dispatcher;
+
+    private static MockedStatic<DBConnection> mockedDbConnection;
+
+    @BeforeAll
+    static void setupStaticMock() {
+        // Initialize static mock for DBConnection
+        mockedDbConnection = mockStatic(DBConnection.class);
+    }
+
+    @AfterAll
+    static void closeStaticMock() {
+        mockedDbConnection.close();
+    }
 
     @BeforeEach
-    void setUp() throws Exception {
-        MockitoAnnotations.openMocks(this);
+    void setup() throws Exception {
+        lenient().when(DBConnection.getConnection()).thenReturn(connection);
+        lenient().when(connection.prepareStatement(anyString())).thenReturn(preparedStatement);
+        lenient().when(request.getSession()).thenReturn(session);
 
-        when(request.getSession()).thenReturn(session);
-        when(session.getAttribute("userId")).thenReturn(1);  // Mock logged-in user
-
-        // **FIX: Ensure parameter names match servlet**
+        // Lenient stubbing for request parameters to avoid strict stubbing issues
         lenient().when(request.getParameter("pickup_location")).thenReturn("Colombo");
-        lenient().when(request.getParameter("dropoff_location")).thenReturn("Matara");
-        lenient().when(request.getParameter("booking_date")).thenReturn("2025-03-01T12:30");
-
-        // Mock HttpServletResponse output
-        stringWriter = new StringWriter();
-        writer = new PrintWriter(stringWriter);
-        lenient().when(response.getWriter()).thenReturn(writer);
+        lenient().when(request.getParameter("dropoff_location")).thenReturn("Kandy");
+        lenient().when(request.getParameter("booking_date")).thenReturn("2025-03-13T10:00");
+        lenient().when(request.getParameter("vehicle_type")).thenReturn("Van");
     }
 
     @Test
-    void testSuccessfulBooking() throws Exception {
-        try (MockedStatic<DBConnection> dbConnectionMockedStatic = Mockito.mockStatic(DBConnection.class)) {
-            dbConnectionMockedStatic.when(DBConnection::getConnection).thenReturn(connection);
-            when(connection.prepareStatement(any(String.class))).thenReturn(preparedStatement);
-            when(preparedStatement.executeUpdate()).thenReturn(1);  // Ensure DB update is simulated
+    void testBookingSuccess() throws Exception {
+        when(session.getAttribute("userId")).thenReturn(1);
+        when(request.getParameter("pickup_location")).thenReturn("Colombo");
+        when(request.getParameter("dropoff_location")).thenReturn("Kandy");
+        when(request.getParameter("booking_date")).thenReturn("2025-03-13T10:00");
+        when(request.getParameter("vehicle_type")).thenReturn("Van");
+        when(preparedStatement.executeUpdate()).thenReturn(1);
 
-            bookingServlet.doPost(request, response);
+        doNothing().when(response).sendRedirect("dashboard.jsp");
 
-            // Verify response.sendRedirect() is called
-            verify(response, times(1)).sendRedirect("dashboard.jsp");
-
-            // Alternative: Check if response's writer is used incorrectly
-            verify(response, never()).getWriter();
-        }
-    }
-
-
-    @Test
-    void testBookingWithNoUserSession() throws Exception {
-        when(session.getAttribute("userId")).thenReturn(null);
         bookingServlet.doPost(request, response);
-        writer.flush();
 
-        assertTrue(stringWriter.toString().contains("Error: You must be logged in to book a cab."));
+        verify(preparedStatement, times(1)).executeUpdate();
+        verify(response, times(1)).sendRedirect("dashboard.jsp");
+    }
+
+    @Test
+    void testBookingFailure() throws Exception {
+        when(session.getAttribute("userId")).thenReturn(1);
+        when(request.getParameter("pickup_location")).thenReturn("Colombo");
+        when(request.getParameter("dropoff_location")).thenReturn("Kandy");
+        when(request.getParameter("booking_date")).thenReturn("2025-03-13T10:00");
+        when(request.getParameter("vehicle_type")).thenReturn("Van");
+        when(preparedStatement.executeUpdate()).thenReturn(0);
+
+        StringWriter writer = new StringWriter();
+        when(response.getWriter()).thenReturn(new PrintWriter(writer));
+
+        bookingServlet.doPost(request, response);
+
+        assertTrue(writer.toString().contains("Error: Failed to book cab."));
+    }
+
+    @Test
+    void testBookingMissingDate() throws Exception {
+        when(session.getAttribute("userId")).thenReturn(1);
+        when(request.getParameter("pickup_location")).thenReturn("Colombo");
+        when(request.getParameter("dropoff_location")).thenReturn("Kandy");
+        when(request.getParameter("booking_date")).thenReturn(""); // Missing Date Scenario
+        when(request.getParameter("vehicle_type")).thenReturn("Van");
+
+        StringWriter writer = new StringWriter();
+        when(response.getWriter()).thenReturn(new PrintWriter(writer));
+
+        bookingServlet.doPost(request, response);
+
+        assertTrue(writer.toString().contains("Error: Booking Date is required."));
+    }
+
+    @Test
+    void testNoUserInSession() throws Exception {
+        when(session.getAttribute("userId")).thenReturn(null);
+
+        StringWriter writer = new StringWriter();
+        when(response.getWriter()).thenReturn(new PrintWriter(writer));
+
+        bookingServlet.doPost(request, response);
+
+        assertTrue(writer.toString().contains("Error: You must be logged in to book a cab."));
     }
 }
