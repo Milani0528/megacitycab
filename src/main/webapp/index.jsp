@@ -34,6 +34,13 @@
         .btn-signup:hover {
             background-color: #0056b3;
         }
+        .btn-register-driver {
+            background-color: #ff5733;
+            color: white;
+        }
+        .btn-register-driver:hover {
+            background-color: #c43c1f;
+        }
         .table-container {
             max-width: 600px;
             margin: 20px auto;
@@ -68,6 +75,11 @@
         <!-- Signup Button -->
         <form action="register.jsp" method="get">
             <button type="submit" class="btn btn-signup w-100">📝 Signup</button>
+        </form>
+        <br>
+        <!-- Register Driver Button -->
+        <form action="register-driver.jsp" method="get">
+            <button type="submit" class="btn btn-register-driver w-100">🚗 Register as Driver</button>
         </form>
     </div>
 </div>

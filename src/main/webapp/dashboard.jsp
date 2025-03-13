@@ -64,6 +64,7 @@
                 <th>Booking Date</th>
                 <th>Status</th>
                 <th>Driver</th>
+                <th>Vehicle</th>
                 <th>Fare</th>
                 <th>Payment</th>
             </tr>
@@ -72,16 +73,19 @@
             <%
                 try (Connection conn = DBConnection.getConnection()) {
                     String sql = "SELECT b.id, b.pickup_location, b.dropoff_location, b.booking_date, b.status, " +
-                            "u.full_name AS driver_name, b.amount, b.payment_status " +
-                            "FROM bookings b LEFT JOIN users u ON b.driver_id = u.id " +
+                            "u.full_name AS driver_name, c.model AS car_model, c.registration_number, c.vehicle_type, " +
+                            "b.amount, b.payment_status " +
+                            "FROM bookings b " +
+                            "LEFT JOIN users u ON b.driver_id = u.id " +
+                            "LEFT JOIN cars c ON u.assigned_car_id = c.id " +
                             "WHERE b.customer_id = ?";
                     PreparedStatement stmt = conn.prepareStatement(sql);
                     stmt.setInt(1, userId);
                     ResultSet rs = stmt.executeQuery();
 
                     while (rs.next()) {
-                        double amount = rs.getDouble("amount"); // Fare amount
-                        boolean isFareSet = amount > 0; // True if fare exists
+                        double amount = rs.getDouble("amount");
+                        boolean isFareSet = amount > 0;
                         String paymentStatus = rs.getString("payment_status");
             %>
             <tr>
@@ -97,6 +101,15 @@
                     <% } %>
                 </td>
                 <td><%= (rs.getString("driver_name") != null) ? rs.getString("driver_name") : "Not Assigned" %></td>
+
+                <!-- Vehicle Details -->
+                <td>
+                    <% if (rs.getString("car_model") != null) { %>
+                    <%= rs.getString("car_model") %> - <%= rs.getString("registration_number") %> (<%= rs.getString("vehicle_type") %>)
+                    <% } else { %>
+                    <span class="text-muted">Not Assigned</span>
+                    <% } %>
+                </td>
 
                 <!-- Fare Display -->
                 <td>
