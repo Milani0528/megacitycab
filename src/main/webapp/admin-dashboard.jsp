@@ -67,7 +67,7 @@
                 <td>
                     <form action="AssignDriverServlet" method="post">
                         <input type="hidden" name="booking_id" value="<%= bookingId %>">
-                        <select name="driver_id" class="form-select">
+                        <select name="driver_id" class="form-select" <%= "Completed".equals(status) ? "disabled" : "" %>>
                             <option value="">Select Driver</option>
                             <%
                                 PreparedStatement driverStmt = conn.prepareStatement(
@@ -81,7 +81,9 @@
                             </option>
                             <% } %>
                         </select>
-                        <button type="submit" class="btn btn-warning btn-sm mt-1">Assign</button>
+                        <button type="submit" class="btn btn-warning btn-sm mt-1" <%= "Completed".equals(status) ? "disabled" : "" %>>
+                            Assign
+                        </button>
                     </form>
                 </td>
                 <td>
