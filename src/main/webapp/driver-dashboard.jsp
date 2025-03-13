@@ -18,6 +18,7 @@
     double balanceEarnings = 0;
 
     try (Connection conn = DBConnection.getConnection()) {
+        // Fetch Vehicle Type
         String vehicleQuery = "SELECT c.vehicle_type FROM cars c JOIN users u ON u.assigned_car_id = c.id WHERE u.id = ?";
         PreparedStatement vehicleStmt = conn.prepareStatement(vehicleQuery);
         vehicleStmt.setInt(1, driverId);
@@ -26,6 +27,7 @@
             vehicleType = vehicleRs.getString("vehicle_type");
         }
 
+        // Fetch Earnings for Completed & Paid Trips
         String earningsQuery = "SELECT COUNT(*) AS completed_trips, SUM(amount) AS total_earnings " +
                 "FROM bookings WHERE driver_id = ? AND status = 'Completed' AND payment_status = 'Paid'";
         PreparedStatement earningsStmt = conn.prepareStatement(earningsQuery);
@@ -61,30 +63,17 @@
             font-family: 'Arial', sans-serif;
         }
 
-        .modern-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0 10px;
+        .trip-card {
+            background: #fff;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s;
         }
 
-        .modern-table th {
-            background-color: #333;
-            color: #fff;
-            padding: 15px;
-            border-radius: 8px;
-        }
-
-        .modern-table td {
-            padding: 15px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-
-        .modern-table tr:hover td {
-            transform: scale(1.02);
-            transition: 0.3s;
+        .trip-card:hover {
+            transform: translateY(-5px);
         }
 
         .summary-container {
@@ -95,40 +84,18 @@
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
         }
 
-        .summary-container h4 {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 15px;
-        }
+        .badge-paid { background: #28a745; padding: 5px 10px; border-radius: 5px; color: white; }
+        .badge-pending { background: #ffc107; padding: 5px 10px; border-radius: 5px; color: black; }
+        .badge-danger { background: #dc3545; padding: 5px 10px; border-radius: 5px; color: white; }
 
-        .summary-container p {
-            font-size: 18px;
-            margin-bottom: 10px;
-        }
-
-        .badge-paid {
-            background: #28a745;
-            padding: 5px 10px;
-            border-radius: 5px;
-            color: white;
-        }
-
-        .badge-pending {
-            background: #ffc107;
-            padding: 5px 10px;
-            border-radius: 5px;
-            color: black;
-        }
-
-        .btn-complete {
+        .btn-submit {
             background-color: #28a745;
-            color: white;
             padding: 8px 16px;
-            border-radius: 8px;
-            border: none;
+            border-radius: 5px;
+            color: white;
         }
 
-        .btn-complete:hover {
+        .btn-submit:hover {
             background-color: #218838;
         }
 
@@ -149,62 +116,56 @@
 
 <div class="container mt-5">
     <div class="row">
-        <!-- Left Side: Trip Details -->
+        <!-- Left Side: Trip Cards -->
         <div class="col-md-8">
-            <div class="card p-4 shadow-lg">
-                <h2 class="text-center text-primary">🚖 Driver - Assigned Trips</h2>
+            <h2 class="text-center text-primary">🚖 Driver - Assigned Trips</h2>
 
-                <table class="modern-table text-center">
-                    <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Customer</th>
-                        <th>Pickup</th>
-                        <th>Drop-off</th>
-                        <th>Status</th>
-                        <th>Fare</th>
-                        <th>Payment</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <%
-                        try (Connection conn = DBConnection.getConnection()) {
-                            String query = "SELECT b.id, u.full_name AS customer_name, b.pickup_location, " +
-                                    "b.dropoff_location, b.status, b.amount, b.payment_status " +
-                                    "FROM bookings b JOIN users u ON b.customer_id = u.id WHERE b.driver_id = ?";
-                            PreparedStatement stmt = conn.prepareStatement(query);
-                            stmt.setInt(1, driverId);
-                            ResultSet rs = stmt.executeQuery();
+            <%
+                try (Connection conn = DBConnection.getConnection()) {
+                    String query = "SELECT b.id, u.full_name AS customer_name, b.pickup_location, b.dropoff_location, " +
+                            "b.status, b.amount, b.payment_status FROM bookings b " +
+                            "JOIN users u ON b.customer_id = u.id WHERE b.driver_id = ?";
+                    PreparedStatement stmt = conn.prepareStatement(query);
+                    stmt.setInt(1, driverId);
+                    ResultSet rs = stmt.executeQuery();
 
-                            while (rs.next()) {
-                    %>
-                    <tr>
-                        <td><%= rs.getInt("id") %></td>
-                        <td><%= rs.getString("customer_name") %></td>
-                        <td><%= rs.getString("pickup_location") %></td>
-                        <td><%= rs.getString("dropoff_location") %></td>
-                        <td><span class="badge badge-paid"><%= rs.getString("status") %></span></td>
-                        <td>$<%= rs.getDouble("amount") %></td>
-                        <td><span class="badge <%= "Paid".equals(rs.getString("payment_status")) ? "badge-paid" : "badge-pending" %>"><%= rs.getString("payment_status") %></span></td>
-                    </tr>
-                    <%
-                            }
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    %>
-                    </tbody>
-                </table>
+                    while (rs.next()) {
+            %>
+            <div class="trip-card">
+                <h5><strong>Booking ID: <%= rs.getInt("id") %></strong></h5>
+                <p><strong>Customer:</strong> <%= rs.getString("customer_name") %></p>
+                <p><strong>Pickup:</strong> <%= rs.getString("pickup_location") %></p>
+                <p><strong>Drop-off:</strong> <%= rs.getString("dropoff_location") %></p>
+                <p><strong>Status:</strong> <span class="badge <%= rs.getString("status").equals("Completed") ? "badge-paid" : "badge-pending" %>">
+                    <%= rs.getString("status") %></span></p>
+                <p><strong>Fare:</strong> $<%= rs.getDouble("amount") %></p>
+                <p><strong>Payment:</strong> <span class="badge <%= rs.getString("payment_status").equals("Paid") ? "badge-paid" : "badge-danger" %>">
+                    <%= rs.getString("payment_status") %></span></p>
 
-                <div class="text-center mt-3">
-                    <a href="index.jsp" class="btn btn-logout">Logout</a>
-                </div>
+                <% if (!"Completed".equals(rs.getString("status"))) { %>
+                <form action="CompleteTripServlet" method="post">
+                    <input type="hidden" name="bookingId" value="<%= rs.getInt("id") %>">
+                    <input type="hidden" name="driverId" value="<%= driverId %>">
+                    <input type="number" step="0.01" min="0" name="fare" placeholder="Enter Fare" class="form-control mb-2" required>
+                    <button type="submit" class="btn-submit">Complete Trip</button>
+                </form>
+                <% } %>
+            </div>
+            <%
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            %>
+
+            <div class="text-center mt-3">
+                <a href="index.jsp" class="btn btn-logout">Logout</a>
             </div>
         </div>
 
         <!-- Right Side: Summary -->
         <div class="col-md-4">
-            <div class="summary-container shadow-lg">
+            <div class="summary-container">
                 <h4>Driver Summary 🚗</h4>
                 <p><strong>Name:</strong> <%= driverName %></p>
                 <p><strong>Vehicle Type:</strong> <%= vehicleType %></p>

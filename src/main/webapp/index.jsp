@@ -54,6 +54,11 @@
     <div class="container">
         <a class="navbar-brand mx-auto">Mega City Cab - Login</a>
     </div>
+    <!-- Add Help Link -->
+    <div class="text-center mt-3">
+        <a href="help.jsp" class="btn btn-info">Help & Support</a>
+    </div>
+
 </nav>
 
 <!-- Login Form -->

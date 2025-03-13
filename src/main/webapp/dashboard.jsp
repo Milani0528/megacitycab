@@ -47,6 +47,16 @@
                     <input type="datetime-local" class="form-control" name="booking_date" required>
                 </div>
 
+                <div class="mb-3">
+                    <label class="form-label">Select Vehicle Type</label>
+                    <select class="form-control" name="vehicle_type" required>
+                        <option value="">Select Type</option>
+                        <option value="Tuk Tuk">Tuk Tuk</option>
+                        <option value="Sedan">Sedan</option>
+                        <option value="Van">Van</option>
+                    </select>
+                </div>
+
                 <button type="submit" class="btn btn-success w-100">Book Now</button>
             </form>
         </div>
@@ -62,6 +72,7 @@
                 <th>Pickup</th>
                 <th>Drop-off</th>
                 <th>Booking Date</th>
+                <th>Vehicle Type</th>
                 <th>Status</th>
                 <th>Driver</th>
                 <th>Vehicle</th>
@@ -72,8 +83,8 @@
             <tbody>
             <%
                 try (Connection conn = DBConnection.getConnection()) {
-                    String sql = "SELECT b.id, b.pickup_location, b.dropoff_location, b.booking_date, b.status, " +
-                            "u.full_name AS driver_name, c.model AS car_model, c.registration_number, c.vehicle_type, " +
+                    String sql = "SELECT b.id, b.pickup_location, b.dropoff_location, b.booking_date, b.vehicle_type, b.status, " +
+                            "u.full_name AS driver_name, c.model AS car_model, c.registration_number, c.vehicle_type AS driver_vehicle_type, " +
                             "b.amount, b.payment_status " +
                             "FROM bookings b " +
                             "LEFT JOIN users u ON b.driver_id = u.id " +
@@ -93,6 +104,7 @@
                 <td><%= rs.getString("pickup_location") %></td>
                 <td><%= rs.getString("dropoff_location") %></td>
                 <td><%= rs.getTimestamp("booking_date") %></td>
+                <td><%= rs.getString("vehicle_type") %></td>
                 <td>
                     <% if ("Completed".equals(rs.getString("status"))) { %>
                     <span class="badge bg-success">Completed</span>
@@ -101,17 +113,13 @@
                     <% } %>
                 </td>
                 <td><%= (rs.getString("driver_name") != null) ? rs.getString("driver_name") : "Not Assigned" %></td>
-
-                <!-- Vehicle Details -->
                 <td>
                     <% if (rs.getString("car_model") != null) { %>
-                    <%= rs.getString("car_model") %> - <%= rs.getString("registration_number") %> (<%= rs.getString("vehicle_type") %>)
+                    <%= rs.getString("car_model") %> - <%= rs.getString("registration_number") %> (<%= rs.getString("driver_vehicle_type") %>)
                     <% } else { %>
                     <span class="text-muted">Not Assigned</span>
                     <% } %>
                 </td>
-
-                <!-- Fare Display -->
                 <td>
                     <% if (isFareSet) { %>
                     $<%= amount %>
@@ -119,8 +127,6 @@
                     <span class="text-muted">Pending</span>
                     <% } %>
                 </td>
-
-                <!-- Payment Button -->
                 <td>
                     <% if (isFareSet) { %>
                     <% if ("Pending".equals(paymentStatus)) { %>

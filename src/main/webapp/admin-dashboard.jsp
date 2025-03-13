@@ -24,6 +24,7 @@
                 <th>Pickup</th>
                 <th>Drop-off</th>
                 <th>Booking Date</th>
+                <th>Vehicle Type</th>
                 <th>Status</th>
                 <th>Driver</th>
                 <th>Actions</th>
@@ -33,7 +34,7 @@
             <%
                 try (Connection conn = DBConnection.getConnection()) {
                     String query = "SELECT b.id, u.full_name, b.pickup_location, b.dropoff_location, " +
-                            "b.booking_date, b.status, b.driver_id, b.payment_status " +
+                            "b.booking_date, b.vehicle_type, b.status, b.driver_id, b.payment_status " +
                             "FROM bookings b JOIN users u ON b.customer_id = u.id";
                     PreparedStatement stmt = conn.prepareStatement(query);
                     ResultSet rs = stmt.executeQuery();
@@ -44,9 +45,9 @@
                         String pickup = rs.getString("pickup_location");
                         String dropoff = rs.getString("dropoff_location");
                         String bookingDate = rs.getString("booking_date");
+                        String vehicleType = rs.getString("vehicle_type");
                         String status = rs.getString("status");
                         int driverId = rs.getInt("driver_id");
-                        String paymentStatus = rs.getString("payment_status");
             %>
             <tr>
                 <td><%= bookingId %></td>
@@ -54,8 +55,8 @@
                 <td><%= pickup %></td>
                 <td><%= dropoff %></td>
                 <td><%= bookingDate %></td>
+                <td><%= vehicleType %></td>
                 <td>
-                    <%-- Status display logic --%>
                     <span class="badge
                         <%= "Completed".equals(status) ? "bg-success" :
                             "Confirmed".equals(status) ? "bg-primary" :
@@ -69,7 +70,9 @@
                         <select name="driver_id" class="form-select">
                             <option value="">Select Driver</option>
                             <%
-                                PreparedStatement driverStmt = conn.prepareStatement("SELECT id, full_name FROM users WHERE role = 'driver'");
+                                PreparedStatement driverStmt = conn.prepareStatement(
+                                        "SELECT u.id, u.full_name FROM users u JOIN cars c ON u.assigned_car_id = c.id WHERE u.role = 'driver' AND c.vehicle_type = ?");
+                                driverStmt.setString(1, vehicleType);
                                 ResultSet driverRs = driverStmt.executeQuery();
                                 while (driverRs.next()) {
                             %>
@@ -82,7 +85,6 @@
                     </form>
                 </td>
                 <td>
-                    <%-- Delete Button --%>
                     <form action="DeleteBookingServlet" method="post">
                         <input type="hidden" name="booking_id" value="<%= bookingId %>">
                         <button type="submit" class="btn btn-danger btn-sm">Delete</button>
