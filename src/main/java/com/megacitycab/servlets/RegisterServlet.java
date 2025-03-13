@@ -13,7 +13,7 @@ import java.sql.PreparedStatement;
 
 @WebServlet("/RegisterServlet")
 public class RegisterServlet extends HttpServlet {
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+    public void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
         String fullName = request.getParameter("full_name");
@@ -21,7 +21,7 @@ public class RegisterServlet extends HttpServlet {
         String email = request.getParameter("email");
         String username = request.getParameter("username");
         String password = request.getParameter("password");
-        String role = request.getParameter("role"); // Default role is 'customer' or 'driver'
+        String role = request.getParameter("role");
 
         try (Connection conn = DBConnection.getConnection()) {
             String sql = "INSERT INTO users (full_name, phone, email, username, password, role) VALUES (?, ?, ?, ?, ?, ?)";
@@ -30,15 +30,18 @@ public class RegisterServlet extends HttpServlet {
             stmt.setString(2, phone);
             stmt.setString(3, email);
             stmt.setString(4, username);
-            stmt.setString(5, password); // Secure it with hashing in production
+            stmt.setString(5, password);
             stmt.setString(6, role);
 
-            int rowsInserted = stmt.executeUpdate();
-            if (rowsInserted > 0) {
-                response.getWriter().println("<h3>Registration Successful! <a href='index.jsp'>Login Here</a></h3>");
-            } else {
-                response.getWriter().println("<h3>Registration Failed. Try Again.</h3>");
+            int result = stmt.executeUpdate();
+
+            if (result > 0) {
+                // Set attribute to show success popup
+                request.setAttribute("success", true);
             }
+
+            // Forward back to the registration page
+            request.getRequestDispatcher("register.jsp").forward(request, response);
 
         } catch (Exception e) {
             e.printStackTrace();
